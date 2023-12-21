@@ -15,7 +15,7 @@ class AStar:
         # map related
         self.env = Env()
         self.motions = self.env.motions # feasible moving directions
-        self.obs = self.env.obs # observation
+        self.obstacles = self.env.obs # obstacles
         
         # initialize
         self.open = [] # priority queue
@@ -43,7 +43,7 @@ class AStar:
     
     def has_collision(self, node1, node2):
         
-        if node1 in self.obs or node2 in self.obs:
+        if node1 in self.obstacles or node2 in self.obstacles:
             return True
 
         if node1[0] != node2[0] and node1[1] != node2[1]:
@@ -54,7 +54,7 @@ class AStar:
                 s1 = (min(node1[0], node2[0]), max(node1[1], node2[1]))
                 s2 = (max(node1[0], node2[0]), min(node1[1], node2[1]))
 
-            if s1 in self.obs or s2 in self.obs:
+            if s1 in self.obstacles or s2 in self.obstacles:
                 return True
 
         return False

@@ -207,7 +207,7 @@ class LPAStar():
             self.compute_shortest_path()
 
             plt.cla()
-            self.plot.plot_grid("Lifelong Planning A*")
+            self.plot.plot_grid("LPA*")
             self.plot_visited(self.visited)
             path = self.extract_path()
             self.plot_path(path)

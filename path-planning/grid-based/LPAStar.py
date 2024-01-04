@@ -144,6 +144,7 @@ class LPAStar():
         # compute the shortest path 
         self.compute_shortest_path()
         path = self.extract_path()
+        self.plot_visited(self.visited)
         self.plot_path(path)
         
         # if there are dynamic obstacles on the planned path, replan the path

@@ -15,12 +15,12 @@ class LPAStar():
         # map related 
         self.env = Env()
         self.motions = self.env.motions # feasible moving directions
-        self.obs = self.env.obs # observation
+        self.obstacles = self.env.obs # obstacles
         
         # initialize
         self.g_values = dict() 
         self.rhs_values = dict()
-        self.open = [] # priority queue
+        self.open = dict() # priority queue {node: key}
         self.visited = set()
         
         self.initialize()
@@ -40,7 +40,7 @@ class LPAStar():
         
         self.g_values[self.start] = float("inf")
         self.rhs_values[self.start] = 0
-        self.open.append((self.calculate_key(self.start), self.start)) # [(key, value)]
+        self.open[self.start] = self.calculate_key(self.start) # {node: key}
             
     def heuristic(self, node):
         """ Calculate the heuristic value of a node
@@ -67,13 +67,13 @@ class LPAStar():
             self.rhs_values[node] = min(self.g_values[predecessor] + self.distance(predecessor, node) 
                                         for predecessor in self.get_predecessor(node))
         
-        # remove from queue
+        # remove from queue: open: [(key, value)]
         if node in self.open:
-            self.open.remove(node)
+            self.open.pop(node)
         
         # if locally inconsistent
         if self.g_values[node] != self.rhs_values[node]:
-            heapq.heappush(self.open, (self.calculate_key(node), node))
+            self.open[node] = self.calculate_key(node)
     
     def calculate_key(self, node):
         return (min(self.g_values[node], self.rhs_values[node]) + self.heuristic(node), 
@@ -83,6 +83,9 @@ class LPAStar():
     def distance(self, node1, node2):
         """ Cost of an edge 
         """
+        if self.has_collision(node1, node2):
+            return float("inf")
+        
         return ((node1[0] - node2[0]) ** 2 + (node1[1] - node2[1]) ** 2) ** 0.5
         
     def get_predecessor(self, node):
@@ -94,28 +97,30 @@ class LPAStar():
         return self.get_neighbor(node)
     
     def get_neighbor(self, node):
-        """ Get the neighbors of a node """
+        """ Get the neighbors of a node that is not in the obstacles"""
         neighbors = []
         for motion in self.motions:
             x = node[0] + motion[0]
             y = node[1] + motion[1]
-            neighbors.append((x, y))
+            if (x,y) not in self.obstacles and x >= 0 and x < self.env.x_range and y >= 0 and y < self.env.y_range:
+                neighbors.append((x, y))
         return neighbors
     
     def top_key(self):
         """ Get the top key of a priority queue 
         """
-        heapq.heapify(self.open)
+        node = min(self.open, key=self.open.get)
         
-        return self.open[0][0] if self.open else (float("inf"), float("inf"))
+        return node, self.open[node]
     
     def compute_shortest_path(self):
         """ Compute the shortest path
         """
-        
-        while self.top_key() < self.calculate_key(self.goal) or self.rhs_values[self.goal] != self.g_values[self.goal]:
+        while self.top_key()[1] < self.calculate_key(self.goal) or self.rhs_values[self.goal] != self.g_values[self.goal]:
             # pop 
-            key, node = heapq.heappop(self.open)
+            node, key = self.top_key()
+            self.open.pop(node)
+            
             # add to visited
             self.visited.add(node)
             
@@ -134,7 +139,6 @@ class LPAStar():
                 for successor in self.get_successor(node):
                     self.update_node(successor)
     
-    
     def search(self, ):
         self.plot.plot_grid("LPA*")
         # compute the shortest path 
@@ -145,7 +149,7 @@ class LPAStar():
         # if there are dynamic obstacles on the planned path, replan the path
         # - update vertex 
         # - compute the shortest path
-        self.fig.convas.mpl_connect('key_press_event', self.on_press)
+        self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         plt.show()
 
     def extract_path(self):
@@ -154,17 +158,17 @@ class LPAStar():
         :return: The planning path
         """
 
-        path = [self.s_goal]
-        s = self.s_goal
+        path = [self.goal]
+        node = self.goal
 
         for k in range(100):
             g_list = {}
-            for x in self.get_neighbor(s):
-                if not self.is_collision(s, x):
-                    g_list[x] = self.g[x]
-            s = min(g_list, key=g_list.get)
-            path.append(s)
-            if s == self.s_start:
+            for neighbor in self.get_neighbor(node):
+                if not self.has_collision(node, neighbor):
+                    g_list[neighbor] = self.g_values[neighbor]
+            node = min(g_list, key=g_list.get)
+            path.append(node)
+            if node == self.start:
                 break
 
         return list(reversed(path))
@@ -179,7 +183,7 @@ class LPAStar():
         - update the plot
         """
         x, y = event.xdata, event.ydata
-        if x < 0 or x > self.x - 1 or y < 0 or y > self.y - 1:
+        if x < 0 or x > self.env.x_range - 1 or y < 0 or y > self.env.y_range - 1:
             print("Please choose right area!")
         else:
             x, y = int(x), int(y)
@@ -188,13 +192,13 @@ class LPAStar():
             self.visited = set()
             self.count += 1
 
-            if (x, y) not in self.obs:
-                self.obs.add((x, y))
+            if (x, y) not in self.obstacles:
+                self.obstacles.add((x, y))
             else:
-                self.obs.remove((x, y))
+                self.obstacles.remove((x, y))
                 self.update_node((x, y))
 
-            self.plot.update_obs(self.obs)
+            self.plot.update_obs(self.obstacles)
 
             for s_n in self.get_neighbor((x, y)):
                 self.update_node(s_n)
@@ -212,8 +216,8 @@ class LPAStar():
         px = [x[0] for x in path]
         py = [x[1] for x in path]
         plt.plot(px, py, linewidth=2)
-        plt.plot(self.s_start[0], self.s_start[1], "bs")
-        plt.plot(self.s_goal[0], self.s_goal[1], "gs")
+        plt.plot(self.start[0], self.start[1], "bs")
+        plt.plot(self.goal[0], self.goal[1], "gs")
 
     def plot_visited(self, visited):
         color = ['gainsboro', 'lightgray', 'silver', 'darkgray',

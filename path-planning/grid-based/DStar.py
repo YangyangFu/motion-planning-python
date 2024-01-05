@@ -67,6 +67,7 @@ class DStar:
         
         # plot
         self.plot.plot_grid("D*")
+        self.plot_visited(self.visited)
         self.plot_path(path)
         self.fig.canvas.mpl_connect('button_press_event', self.on_press)
         plt.show()
@@ -234,7 +235,7 @@ class DStar:
             path = self.extract_path(self.start, self.goal)
 
             plt.cla()
-            self.plot.plot_grid("LPA*")
+            self.plot.plot_grid("D*")
             self.plot_visited(self.visited)
             self.plot_path(path)
             self.fig.canvas.draw_idle()

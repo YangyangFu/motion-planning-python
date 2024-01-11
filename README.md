@@ -15,7 +15,7 @@ This library implements classic motion planning algorithms for autonoumous syste
 
 ## Examples
 
-![astar](./path-planning/grid-based/figs/astar.gif)
+![astar](https://github.com/YangyangFu/motion-planning-python/blob/main/path-planning/figs/astar.gif)
 
 
 ## Thoughts

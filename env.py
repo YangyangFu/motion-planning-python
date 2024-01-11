@@ -90,6 +90,9 @@ class Map():
         # save for movie
         self.frames.append(np.copy(self.grid))
         
+        # show
+        cv.imshow(self.title, self.grid)
+        
     def update_obstacles(self, event, x, y, flags, param):
         if event == cv.EVENT_LBUTTONDOWN:
             row = int(y)

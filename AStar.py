@@ -1,4 +1,5 @@
 import heapq 
+import cv2 as cv 
 
 from env import Map 
 
@@ -17,14 +18,19 @@ class AStar:
         self.env.set_start(start)
         self.env.set_goal(goal)
         self.motions = self.env.motions # feasible moving directions
-        self.obstacles = self.env.obstacles # observed obstacles
         
         # initialize
+        self.initialize()
+        
+        # for visualization
+        self.count = 0
+
+    def initialize(self):
         self.open = [] # priority queue
         self.visited = []
         self.parents = dict() 
-        self.g_values = dict()
-        
+        self.g_values = dict()        
+
     def heuristic(self, node):
         """ Calculate the heuristic value of a node
 
@@ -36,7 +42,6 @@ class AStar:
         elif self.heuristic_type == "euclidean":
             return ((node[0] - self.goal[0]) ** 2 + (node[1] - self.goal[1]) ** 2) ** 0.5
     
-    
     def distance(self, node1, node2):
         if self.has_collision(node1, node2):
             return float("inf")
@@ -45,7 +50,7 @@ class AStar:
     
     def has_collision(self, node1, node2):
         
-        if node1 in self.obstacles or node2 in self.obstacles:
+        if node1 in self.env.obstacles or node2 in self.env.obstacles:
             return True
 
         if node1[0] != node2[0] and node1[1] != node2[1]:
@@ -56,7 +61,7 @@ class AStar:
                 s1 = (min(node1[0], node2[0]), max(node1[1], node2[1]))
                 s2 = (max(node1[0], node2[0]), min(node1[1], node2[1]))
 
-            if s1 in self.obstacles or s2 in self.obstacles:
+            if s1 in self.env.obstacles or s2 in self.env.obstacles:
                 return True
 
         return False
@@ -72,6 +77,7 @@ class AStar:
     def search(self):
         """ A* search algorithm
         """
+        self.initialize()
         # initialize the open list with start node
         self.parents[self.start] = None
         self.g_values[self.start] = 0
@@ -121,7 +127,53 @@ class AStar:
             node = self.parents[node]
             
         return path[::-1]
+
+    def plot(self):
+        """Plots the map
+        """
+        cv.namedWindow(self.name, cv.WINDOW_NORMAL)
+        cv.setMouseCallback(self.name, self.update_obstacles)
+        self.env.draw_grid()
+        cv.imshow(self.name, self.env.grid)
     
+    def update_obstacles(self, event, x, y, flags, param):
+        if event == cv.EVENT_LBUTTONDOWN:
+            row = int(y)
+            col = int(x)
+
+            # empty visited set
+            self.visited = []
+            
+            # update obstacles
+            if (row, col) not in self.env.obstacles:
+                self.env.obstacles.add((row, col))
+            else:
+                self.env.obstacles.remove((row, col))
+                # white out the grid
+                self.env.grid[row, col] = [255, 255, 255]
+            
+            # plot obstacles
+            for obstacle in self.env.obstacles:
+                self.env.grid[obstacle[0], obstacle[1]] = [0, 0, 0]
+
+            # save current frame for movie
+            self.env.frames.append(self.env.grid.copy())
+            
+            # replot the grid with dynamic obstacles
+            self.plot()
+            
+            # research the path
+            path = self.search()
+            
+            # plot updated path and visited nodes
+            self.env.plot_visited(self.visited)
+            self.env.plot_path(path)
+            
+            self.count += 1
+            print("udpate after click ", self.count)
+            # show update
+            cv.imshow(self.name, self.env.grid)
+
 def main():
     import cv2 as cv 
     
@@ -129,14 +181,14 @@ def main():
     goal = (25, 45)
 
     astar = AStar(start, goal, "euclidean")
-    astar.env.plot()
+    astar.plot()
     path = astar.search()
     astar.env.plot_visited(astar.visited)
     astar.env.plot_path(path)
     cv.waitKey(0)
     
     # save a movie at the end
-    astar.env.save_gif("astar.gif", 20)
+    astar.env.save_gif("astar.gif", 24)
     
 if __name__ == '__main__':
     main()

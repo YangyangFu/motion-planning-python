@@ -1,20 +1,22 @@
 import matplotlib.pyplot as plt
+import cv2 as cv 
 
-from env import Env
-from plotting import Plotting 
+from env import Map
 
 class DStarLite():
+    """ D* Lite algorithm
+    """
     def __init__(self, start, goal, heuristic_type):
+        self.name = "D* Lite"
         self.start = start
         self.goal = goal
         self.heuristic_type = heuristic_type
         
         # map related 
-        self.env = Env()
+        self.env = Map(title=self.name, type="ground_truth")
+        self.env.set_start(start)
+        self.env.set_goal(goal)
         self.motions = self.env.motions
-        self.x_range = self.env.x_range
-        self.y_range = self.env.y_range
-        self.obstacles = self.env.obs
         
         # algorithm related
         self.k_m = 0
@@ -23,9 +25,8 @@ class DStarLite():
         self.open = dict()
         
         # visualization
-        self.fig = plt.figure()
-        self.plot = Plotting(self.start, self.goal)
         self.count = 0        
+        self.visited = [] 
         
         # initialize
         self.initialize()
@@ -33,8 +34,8 @@ class DStarLite():
     def initialize(self):
         """ Initialize g and rhs values for all nodes
         """ 
-        for x in range(self.x_range):
-            for y in range(self.y_range):
+        for x in range(self.env.x_lim):
+            for y in range(self.env.y_lim):
                 self.g_values[(x, y)] = float("inf")
                 self.rhs_values[(x, y)] = float("inf")
         
@@ -44,55 +45,11 @@ class DStarLite():
     
     def search(self):
         
-        self.plot.plot_grid("D* Lite")
-    
         self.compute_shortest_path()
         path = self.extract_path()
-        self.plot_visited(self.visited)
-        self.plot_path(path) 
-        
-        self.fig.canvas.mpl_connect('key_press_event', self.on_press)
-        plt.show()
-    
-    
-    def on_press(self, event):
-        """Event handler for key press event
-        
-        If a key is pressed, the position of the mouse is assumed to be a new obstacle. 
-        - new obstacle on the path detected
-        - update the node with new distance 
-        - compute the shortest path
-        - update the plot
-        """
-        x, y = event.xdata, event.ydata
-        if x < 0 or x > self.env.x_range - 1 or y < 0 or y > self.env.y_range - 1:
-            print("Please choose right area!")
-        else:
-            x, y = int(x), int(y)
-            print("Change position: s =", x, ",", "y =", y)
 
-            self.count += 1
+        return path
 
-            if (x, y) not in self.obstacles:
-                self.obstacles.add((x, y))
-            else:
-                self.obstacles.remove((x, y))
-                self.update_node((x, y))
-
-            self.plot.update_obs(self.obstacles)
-
-            for s_n in self.get_neighbors((x, y)):
-                self.update_node(s_n)
-
-            self.compute_shortest_path()
-
-            plt.cla()
-            self.plot.plot_grid("D* Lite")
-            self.plot_visited(self.visited)
-            path = self.extract_path()
-            self.plot_path(path)
-            self.fig.canvas.draw_idle()        
-    
     def heuristic(self, node):
         """ Calculate the heuristic value of a node
 
@@ -116,9 +73,9 @@ class DStarLite():
         neighbors = []
         for motion in self.motions:
             neighbor = (node[0] + motion[0], node[1] + motion[1])
-            if neighbor[0] < 0 or neighbor[0] >= self.x_range or neighbor[1] < 0 or neighbor[1] >= self.y_range:
+            if neighbor[0] < 0 or neighbor[0] >= self.env.x_lim or neighbor[1] < 0 or neighbor[1] >= self.env.y_lim:
                 continue
-            if neighbor in self.obstacles:
+            if neighbor in self.env.obstacles:
                 continue
             neighbors.append(neighbor)
         return neighbors
@@ -159,9 +116,7 @@ class DStarLite():
     def compute_shortest_path(self):
         """Compute the shortest path from start to goal
         """
-        # for visualization only 
-        self.visited = set()
-        
+                
         # main loop
         while self.top_key()[1] < self.calculate_key(self.start) or self.rhs_values[self.start] > self.g_values[self.start]:
             k_old = self.top_key()[1]
@@ -169,7 +124,7 @@ class DStarLite():
             k_new = self.calculate_key(u)
             
             self.open.pop(u)
-            self.visited.add(u)
+            self.visited.append(u)
             
             if k_old < k_new:
                 self.open[u] = k_new
@@ -213,7 +168,7 @@ class DStarLite():
 
     def has_collision(self, node1, node2):
         
-        if node1 in self.obstacles or node2 in self.obstacles:
+        if node1 in self.env.obstacles or node2 in self.env.obstacles:
             return True
 
         if node1[0] != node2[0] and node1[1] != node2[1]:
@@ -224,32 +179,69 @@ class DStarLite():
                 s1 = (min(node1[0], node2[0]), max(node1[1], node2[1]))
                 s2 = (max(node1[0], node2[0]), min(node1[1], node2[1]))
 
-            if s1 in self.obstacles or s2 in self.obstacles:
+            if s1 in self.env.obstacles or s2 in self.env.obstacles:
                 return True
 
         return False
 
-    def plot_path(self, path):
-        px = [x[0] for x in path]
-        py = [x[1] for x in path]
-        plt.plot(px, py, linewidth=2)
-        plt.plot(self.start[0], self.start[1], "bs")
-        plt.plot(self.goal[0], self.goal[1], "gs")
+    def plot(self):
+        """Plots the map
+        """
+        cv.namedWindow(self.name, cv.WINDOW_NORMAL)
+        cv.setMouseCallback(self.name, self.update_obstacles)
+        self.env.draw_grid()
+        cv.imshow(self.name, self.env.grid)
+    
+    
+    def update_obstacles(self, event, x, y, flags, param):
+        if event == cv.EVENT_LBUTTONDOWN:
+            row = int(y)
+            col = int(x)
 
-    def plot_visited(self, visited):
-        color = ['gainsboro', 'lightgray', 'silver', 'darkgray',
-                 'bisque', 'navajowhite', 'moccasin', 'wheat',
-                 'powderblue', 'skyblue', 'lightskyblue', 'cornflowerblue']
+            # empty visited set
+            self.visited = []
+            
+            # update obstacles
+            if (row, col) not in self.env.obstacles:
+                self.env.obstacles.add((row, col))
+            else:
+                self.env.obstacles.remove((row, col))
+                # white out the grid
+                self.env.grid[row, col] = [255, 255, 255]
+            
+            # plot obstacles
+            for obstacle in self.env.obstacles:
+                self.env.grid[obstacle[0], obstacle[1]] = [0, 0, 0]
 
-        if self.count >= len(color) - 1:
-            self.count = 0
+            # save current frame for movie
+            self.env.frames.append(self.env.grid.copy())
+            
+            # replot the grid with dynamic obstacles
+            self.plot()
+            
+            # research the path
+            path = self.search()
 
-        for x in visited:
-            plt.plot(x[0], x[1], marker='s', color=color[self.count])
+            # plot updated path and visited nodes
+            self.env.plot_visited(self.visited)
+            self.env.plot_path(path)
+            
+            self.count += 1
+            print("udpate after click ", self.count)
+            # show update
+            cv.imshow(self.name, self.env.grid)
 
 if __name__ == '__main__':
     x_start = (5, 5)
-    x_goal = (45, 25)
+    x_goal = (25, 45)
 
     dstar_lite = DStarLite(x_start, x_goal, "euclidean")
-    dstar_lite.search()
+    dstar_lite.plot() 
+    path = dstar_lite.search()
+    dstar_lite.env.plot_visited(dstar_lite.visited)
+    dstar_lite.env.plot_path(path)
+    
+    cv.waitKey(0)
+    
+    dstar_lite.env.save_gif(name='dstarlite.gif', duration=20)
+    cv.destroyAllWindows()

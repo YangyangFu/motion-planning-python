@@ -1,13 +1,16 @@
 """ DStar algorithm
 """
 import matplotlib.pyplot as plt
+import cv2 as cv 
 
-from env import Env 
-from plotting import Plotting
+from env import Map 
 
 class DStar:
+    """D* algorithm
+    """
     
     def __init__(self, start, goal):
+        self.name = "D*"
         self.start = start
         self.goal = goal
 
@@ -16,27 +19,26 @@ class DStar:
         self.h = {}
         self.k = {}
         self.path = []
-        self.visited = set()
-        self.count = 0
-        
+        self.visited = []        
         self.open = set()
         self.parent = {}
         
         # map related
-        self.env = Env()
+        self.env = Map(title=self.name, type="ground_truth")
+        self.env.set_start(start)
+        self.env.set_goal(goal)
         self.motions = self.env.motions
-        self.x_range = self.env.x_range
-        self.y_range = self.env.y_range
-        self.obstacles = self.env.obs
+        self.obstacles = self.env.obstacles
         
         # visualization
-        self.fig = plt.figure()
-        self.plot = Plotting(self.start, self.goal)
         self.count = 0
+        
+        # initialize
+        self.initialize()
     
     def initialize(self):
-        for x in range(self.x_range):
-            for y in range(self.y_range):
+        for x in range(self.env.x_lim):
+            for y in range(self.env.y_lim):
                 self.t[(x, y)] = 'NEW'
                 self.h[(x, y)] = float("inf")
                 self.k[(x, y)] = 0
@@ -47,8 +49,6 @@ class DStar:
     def search(self):
         """Runs D* algorithm
         """
-        # initalize algorithm
-        self.initialize()
         # insert the goal into the OPEN list
         self.insert(self.goal, 0)
         
@@ -65,12 +65,7 @@ class DStar:
         # extract the optimal path 
         path = self.extract_path(self.start, self.goal)
         
-        # plot
-        self.plot.plot_grid("D*")
-        self.plot_visited(self.visited)
-        self.plot_path(path)
-        self.fig.canvas.mpl_connect('button_press_event', self.on_press)
-        plt.show()
+        return path
             
     def process_state(self):
         """Calculates the optimal path costs to the goal 
@@ -78,7 +73,7 @@ class DStar:
         """
         # remove the state s with the smallest key from the OPEN list
         X = self.min_state()
-        self.visited.add(X)
+        self.visited.append(X)
         if X is None:
             return -1
 
@@ -173,7 +168,7 @@ class DStar:
         for motion in self.motions:
             x = node[0] + motion[0]
             y = node[1] + motion[1]
-            if (x,y) not in self.obstacles and x >= 0 and x < self.env.x_range and y >= 0 and y < self.env.y_range:
+            if (x,y) not in self.obstacles and x >= 0 and x < self.env.x_lim and y >= 0 and y < self.env.y_lim:
                 neighbors.append((x, y))
         return neighbors
     
@@ -192,34 +187,61 @@ class DStar:
             if node == goal:
                 break
         return path
-    
-    def on_press(self, event):
-        """Event handler for key press event
+
+    def has_collision(self, node1, node2):
         
-        If a key is pressed, the position of the mouse is assumed to be a new obstacle. 
-        - new obstacle on the path detected
-        - update the node with new distance 
-        - compute the shortest path
-        - update the plot
-        """
-        x, y = event.xdata, event.ydata
-        if x < 0 or x > self.env.x_range - 1 or y < 0 or y > self.env.y_range - 1:
-            print("Please choose right area!")
-        else:
-            x, y = int(x), int(y)
-            print("Change position: s =", x, ",", "y =", y)
+        if node1 in self.env.obstacles or node2 in self.env.obstacles:
+            return True
 
-            self.visited = set()
-            self.count += 1
-
-            if (x, y) not in self.obstacles:
-                self.obstacles.add((x, y))
+        if node1[0] != node2[0] and node1[1] != node2[1]:
+            if node2[0] - node1[0] == node1[1] - node2[1]:
+                s1 = (min(node1[0], node2[0]), min(node1[1], node2[1]))
+                s2 = (max(node1[0], node2[0]), max(node1[1], node2[1]))
             else:
-                self.obstacles.remove((x, y))
+                s1 = (min(node1[0], node2[0]), max(node1[1], node2[1]))
+                s2 = (max(node1[0], node2[0]), min(node1[1], node2[1]))
 
+            if s1 in self.env.obstacles or s2 in self.env.obstacles:
+                return True
 
-            self.plot.update_obs(self.obstacles)
+        return False
 
+    def plot(self):
+        """Plots the map
+        """
+        cv.namedWindow(self.name, cv.WINDOW_NORMAL)
+        cv.setMouseCallback(self.name, self.update_obstacles)
+        self.env.draw_grid()
+        cv.imshow(self.name, self.env.grid)
+    
+    
+    def update_obstacles(self, event, x, y, flags, param):
+        if event == cv.EVENT_LBUTTONDOWN:
+            row = int(y)
+            col = int(x)
+
+            # empty visited set
+            self.visited = []
+            
+            # update obstacles
+            if (row, col) not in self.env.obstacles:
+                self.env.obstacles.add((row, col))
+            else:
+                self.env.obstacles.remove((row, col))
+                # white out the grid
+                self.env.grid[row, col] = [255, 255, 255]
+            
+            # plot obstacles
+            for obstacle in self.env.obstacles:
+                self.env.grid[obstacle[0], obstacle[1]] = [0, 0, 0]
+
+            # save current frame for movie
+            self.env.frames.append(self.env.grid.copy())
+            
+            # replot the grid with dynamic obstacles
+            self.plot()
+            
+            # research the path
             node = self.start
             while node != self.goal:
                 if self.has_collision(node, self.parent[node]):
@@ -233,53 +255,29 @@ class DStar:
                 node = self.parent[node]
 
             path = self.extract_path(self.start, self.goal)
-
-            plt.cla()
-            self.plot.plot_grid("D*")
-            self.plot_visited(self.visited)
-            self.plot_path(path)
-            self.fig.canvas.draw_idle()
             
-    def plot_path(self, path):
-        px = [x[0] for x in path]
-        py = [x[1] for x in path]
-        plt.plot(px, py, linewidth=2)
-        plt.plot(self.start[0], self.start[1], "bs")
-        plt.plot(self.goal[0], self.goal[1], "gs")
-
-    def plot_visited(self, visited):
-        color = ['gainsboro', 'lightgray', 'silver', 'darkgray',
-                 'bisque', 'navajowhite', 'moccasin', 'wheat',
-                 'powderblue', 'skyblue', 'lightskyblue', 'cornflowerblue']
-
-        if self.count >= len(color) - 1:
-            self.count = 0
-
-        for x in visited:
-            plt.plot(x[0], x[1], marker='s', color=color[self.count])
-
-    def has_collision(self, node1, node2):
-        
-        if node1 in self.obstacles or node2 in self.obstacles:
-            return True
-
-        if node1[0] != node2[0] and node1[1] != node2[1]:
-            if node2[0] - node1[0] == node1[1] - node2[1]:
-                s1 = (min(node1[0], node2[0]), min(node1[1], node2[1]))
-                s2 = (max(node1[0], node2[0]), max(node1[1], node2[1]))
-            else:
-                s1 = (min(node1[0], node2[0]), max(node1[1], node2[1]))
-                s2 = (max(node1[0], node2[0]), min(node1[1], node2[1]))
-
-            if s1 in self.obstacles or s2 in self.obstacles:
-                return True
-
-        return False
+            # plot updated path and visited nodes
+            self.env.plot_visited(self.visited)
+            self.env.plot_path(path)
+            
+            self.count += 1
+            print("udpate after click ", self.count)
+            # show update
+            cv.imshow(self.name, self.env.grid)
 
 if __name__ == "__main__":
+    import cv2 as cv
+    
     start = (5, 5)
-    goal = (45, 25)
+    goal = (25, 45)
 
     dstar = DStar(start, goal)
-    dstar.search()
+    dstar.plot() 
+    path = dstar.search()
+    dstar.env.plot_visited(dstar.visited)
+    dstar.env.plot_path(path)
     
+    cv.waitKey(0)
+    
+    dstar.env.save_gif(name='dstar.gif', duration=20)
+    cv.destroyAllWindows()

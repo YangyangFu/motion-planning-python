@@ -15,7 +15,11 @@ This library implements classic motion planning algorithms for autonoumous syste
 
 ## Examples
 
-![astar](https://github.com/YangyangFu/motion-planning-python/blob/main/path-planning/figs/astar.gif)
+Table to show the gif for each algorithm.
+
+| A* | LPA* |
+|:---:|:---:|
+|![astar](https://github.com/YangyangFu/motion-planning-python/blob/main/path-planning/figs/astar.gif)|![lpastar](https://github.com/YangyangFu/motion-planning-python/blob/main/path-planning/figs/lpastar.gif)|
 
 
 ## Thoughts

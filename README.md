@@ -1,9 +1,6 @@
 # Overview
 This library implements classic motion planning algorithms for autonoumous system in Python.
 
-## Thoughts
-- connect with CARLA/ROS?
-- connect with Apollo?
 
 ## Algorithms
 
@@ -16,9 +13,11 @@ This library implements classic motion planning algorithms for autonoumous syste
     - lattice-planner
 ```
 
+## Examples
 
-## TODO
-- [] implement gif generator
-- [] implement partially observed grid with moving robots
-- [] clean implementation using priority queue for open list instead of a dictionary
+![astar](./path-planning/grid-based/figs/astar.gif)
 
+
+## Thoughts
+- connect with CARLA/ROS?
+- connect with Apollo?

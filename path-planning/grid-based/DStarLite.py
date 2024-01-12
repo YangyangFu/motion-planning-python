@@ -232,10 +232,10 @@ class DStarLite():
             cv.imshow(self.name, self.env.grid)
 
 if __name__ == '__main__':
-    x_start = (5, 5)
-    x_goal = (25, 45)
+    start = (5, 15)
+    goal = (50, 90)
 
-    dstar_lite = DStarLite(x_start, x_goal, "euclidean")
+    dstar_lite = DStarLite(start, goal, "euclidean")
     dstar_lite.plot()
     cv.waitKey(0)
      

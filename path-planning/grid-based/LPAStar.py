@@ -233,10 +233,10 @@ class LPAStar():
             cv.imshow(self.name, self.env.grid)
             
 if __name__ == '__main__':
-    x_start = (5, 5)
-    x_goal = (25, 45)
+    start = (5, 15)
+    goal = (50, 90)
 
-    lpastar = LPAStar(x_start, x_goal, "euclidean")
+    lpastar = LPAStar(start, goal, "euclidean")
     lpastar.plot()
     cv.waitKey(0)
      

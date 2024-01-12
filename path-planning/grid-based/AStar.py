@@ -177,8 +177,8 @@ class AStar:
 def main():
     import cv2 as cv 
     
-    start = (5, 5)
-    goal = (25, 45)
+    start = (5, 15)
+    goal = (50, 90)
 
     astar = AStar(start, goal, "euclidean")
     astar.plot()

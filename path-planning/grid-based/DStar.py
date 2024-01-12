@@ -268,8 +268,8 @@ class DStar:
 if __name__ == "__main__":
     import cv2 as cv
     
-    start = (5, 5)
-    goal = (25, 45)
+    start = (5, 15)
+    goal = (50, 90)
 
     dstar = DStar(start, goal)
     dstar.plot() 

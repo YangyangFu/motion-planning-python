@@ -6,8 +6,8 @@ class Map():
     
     def __init__(self, title, type='ground_truth'):
         
-        self.x_lim = 31
-        self.y_lim = 51
+        self.x_lim = 61
+        self.y_lim = 101
         self.motions = [(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1)]
 
         # type of map: ground_truth (assume know all details of the map), partial (only know from observations)
@@ -46,15 +46,15 @@ class Map():
             for i in range(x):
                 self.obstacles.add((i, y-1))
 
-            for i in range(10, 21):
-                self.obstacles.add((15, i))
-            for i in range(15):
-                self.obstacles.add((i, 20))
-
-            for i in range(15, 30):
-                self.obstacles.add((i, 30))
-            for i in range(16):
+            for i in range(20, 41):
+                self.obstacles.add((30, i))
+            for i in range(30):
                 self.obstacles.add((i, 40))
+
+            for i in range(30, 60):
+                self.obstacles.add((i, 60))
+            for i in range(32):
+                self.obstacles.add((i, 80))
 
         # partial observation:
         elif self.type == 'partial':
@@ -66,22 +66,16 @@ class Map():
     def set_goal(self, goal):
         self.goal = goal
     
-    def plot(self):
-        """Initalize a new drawing window with current obstacles and start/goal points
-        """
-        cv.namedWindow(self.title, cv.WINDOW_NORMAL)
-        cv.setMouseCallback(self.title, self.update_obstacles)
-        self.draw_grid()    
-        cv.imshow(self.title, self.grid)
-    
-
     def draw_grid(self):
         # initialize a white grid 
         self.grid = np.ones((self.x_lim, self.y_lim, 3), dtype=np.uint8) * 255
         
         # add start and goal points
-        self.grid[self.start[0], self.start[1]] = [255, 0, 0]
-        self.grid[self.goal[0], self.goal[1]] = [0, 255, 0]
+        start_color = [255, 0, 0]
+        cv.drawMarker(self.grid, self.start[::-1], start_color, markerType=cv.MARKER_STAR, markerSize=1, thickness=1)
+
+        goal_color = [34,139,34]
+        cv.drawMarker(self.grid, self.goal[::-1], goal_color, markerType=cv.MARKER_TRIANGLE_UP, markerSize=1, thickness=1)
         
         # add obstacles
         for obstacle in self.obstacles:
@@ -100,7 +94,7 @@ class Map():
         """        
         # color path with red
         for i in range(1, len(path)-2):
-            cv.line(self.grid, path[i][::-1], path[i+1][::-1], (127, 127, 255), 1)
+            cv.line(self.grid, path[i][::-1], path[i+1][::-1], (80, 127, 255), 1)
         
         self.frames.append(np.copy(self.grid))
         cv.imshow(self.title, self.grid)

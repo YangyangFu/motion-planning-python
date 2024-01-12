@@ -237,12 +237,13 @@ if __name__ == '__main__':
     x_goal = (25, 45)
 
     lpastar = LPAStar(x_start, x_goal, "euclidean")
-    lpastar.plot() 
+    lpastar.plot()
+    cv.waitKey(0)
+     
     path = lpastar.search()
     lpastar.env.plot_visited(lpastar.visited)
     lpastar.env.plot_path(path)
-    
     cv.waitKey(0)
     
-    lpastar.env.save_gif(name='lpastar.gif', duration=20)
+    #lpastar.env.save_gif(name='lpastar.gif', duration=20)
     cv.destroyAllWindows()

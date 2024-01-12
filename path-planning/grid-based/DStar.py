@@ -273,11 +273,12 @@ if __name__ == "__main__":
 
     dstar = DStar(start, goal)
     dstar.plot() 
+    cv.waitKey(0)
     path = dstar.search()
     dstar.env.plot_visited(dstar.visited)
     dstar.env.plot_path(path)
     
     cv.waitKey(0)
     
-    dstar.env.save_gif(name='dstar.gif', duration=20)
+    #dstar.env.save_gif(name='dstar.gif', duration=20)
     cv.destroyAllWindows()

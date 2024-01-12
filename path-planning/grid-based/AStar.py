@@ -182,13 +182,14 @@ def main():
 
     astar = AStar(start, goal, "euclidean")
     astar.plot()
+    cv.waitKey(0)
     path = astar.search()
     astar.env.plot_visited(astar.visited)
     astar.env.plot_path(path)
     cv.waitKey(0)
     
     # save a movie at the end
-    astar.env.save_gif("astar.gif", 24)
+    #astar.env.save_gif("astar.gif", 24)
     
 if __name__ == '__main__':
     main()

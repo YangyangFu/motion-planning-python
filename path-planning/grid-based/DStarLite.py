@@ -236,12 +236,13 @@ if __name__ == '__main__':
     x_goal = (25, 45)
 
     dstar_lite = DStarLite(x_start, x_goal, "euclidean")
-    dstar_lite.plot() 
+    dstar_lite.plot()
+    cv.waitKey(0)
+     
     path = dstar_lite.search()
     dstar_lite.env.plot_visited(dstar_lite.visited)
     dstar_lite.env.plot_path(path)
-    
     cv.waitKey(0)
     
-    dstar_lite.env.save_gif(name='dstarlite.gif', duration=20)
+    #dstar_lite.env.save_gif(name='dstarlite.gif', duration=20)
     cv.destroyAllWindows()

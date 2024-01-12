@@ -66,15 +66,6 @@ class Map():
     def set_goal(self, goal):
         self.goal = goal
     
-    def plot(self):
-        """Initalize a new drawing window with current obstacles and start/goal points
-        """
-        cv.namedWindow(self.title, cv.WINDOW_NORMAL)
-        cv.setMouseCallback(self.title, self.update_obstacles)
-        self.draw_grid()    
-        cv.imshow(self.title, self.grid)
-    
-
     def draw_grid(self):
         # initialize a white grid 
         self.grid = np.ones((self.x_lim, self.y_lim, 3), dtype=np.uint8) * 255

@@ -185,6 +185,10 @@ class RRT():
             # research the path
             path = self.search()
 
+            # plot visited 
+            self.env.plot_visited([node.val for node in self.tree])
+            cv.waitKey(100)
+            
             # plot updated path 
             self.env.plot_path(path)
             

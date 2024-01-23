@@ -203,6 +203,8 @@ if __name__ == '__main__':
     cv.waitKey(0)
      
     path = rrt.search()
+    rrt.env.plot_visited([node.val for node in rrt.tree])
+    cv.waitKey(0)
     rrt.env.plot_path(path)
     cv.waitKey(0)
     

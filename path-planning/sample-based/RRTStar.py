@@ -30,7 +30,8 @@ class RRTStar():
         self.dt = 1 # time step
         self.max_speed = math.sqrt(2) # maximum motion speed on x or y axis
         self.tree = [self.start] # list of TreeNode to represent tree
-        
+        self.radius = 20
+        self.dimension = 2 # 2-d planning
         # visualization
         self.count = 0
         
@@ -50,7 +51,7 @@ class RRTStar():
             
             # add new_state to tree
             if new_state and not self.has_collision(nearest.val, new_state.val):
-                state_near = self.near(new_state, radius=5)
+                state_near = self.near(new_state)
                 self.tree.append(new_state)
 
                 # connect along a mimum-cost path
@@ -147,12 +148,16 @@ class RRTStar():
             new_state.parent = nearest
             return new_state
 
-    def near(self, state, radius=1):
+    def near(self, state):
         """ finds the vertices in the tree that are within a ball of radius centered at state
         """
+        # find radius 
+        r = min(self.radius * ((math.log(len(self.tree) + 1) / len(self.tree)) ** (1/self.dimension)), self.max_speed)
+
+        # find near vertices
         near = []
         for node in self.tree:
-            if self.distance(node, state) <= radius:
+            if self.distance(node, state) <= r:
                 near.append(node)
         return near
 
@@ -198,6 +203,8 @@ class RRTStar():
                 self.env.obstacles.remove((row, col))
                 # white out the grid
                 self.env.grid[row, col] = [255, 255, 255]
+                # 
+                print("remove obstacle at ", row, col)
             
             # plot obstacles
             for obstacle in self.env.obstacles:

@@ -2,6 +2,10 @@
 
 ## Pure Pursuit
 
+Ref:
+
+- https://wiki.purduesigbots.com/software/control-algorithms/basic-pure-pursuit
+
 **Local Frame**
 
 This is the pure pursuit algorithm. It is a path tracking algorithm that is used to follow a path. The algorithm calculates the steering angle of the vehicle based on the current position of the vehicle and the path to be followed.

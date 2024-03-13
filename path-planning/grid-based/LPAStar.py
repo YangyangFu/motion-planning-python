@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import cv2 as cv 
 
 from env import Map 

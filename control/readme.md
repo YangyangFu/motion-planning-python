@@ -61,3 +61,11 @@ the look ahead distance L is a parameter in the algorithm.
 
 
 The lookahead distance is usually chosen to be a function of the speed of the vehicle, so that $\omega$ will not become more sensitive to $\alpha$ when $v_r$ is higher. The higher the speed, the higher the lookahead distance. This is because at higher speeds, the vehicle will cover more distance in the time it takes to react to the path. Thus, the lookahead distance should be higher to ensure that the vehicle has enough time to react to the path.
+
+
+## Stanley - front wheel position based feedback
+
+Ref:
+
+- Stanley: the robot that won the DARPA Grand Challenge
+

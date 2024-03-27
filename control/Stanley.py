@@ -20,6 +20,7 @@ sys.path.append(str(CUBIC_SPLINE_DIR))
 from CubicSpline import calc_spline_course
 
 k = 0.5  # control gain
+ks = 0 # softening gain for stanley
 Kp = 1.0  # speed proportional gain
 dt = 0.1  # [s] time difference
 L = 2.9  # [m] Wheel base of vehicle
@@ -152,7 +153,7 @@ def stanley_control(state, cx, cy, cyaw, last_target_idx):
     # theta_e corrects the heading error
     theta_e = normalize_angle(cyaw[current_target_idx] - state.yaw)
     # theta_d corrects the cross track error
-    theta_d = np.arctan2(k * error_front_axle, state.v)
+    theta_d = np.arctan2(k * error_front_axle, ks + state.v)
     # Steering control
     delta = theta_e + theta_d
 
@@ -193,8 +194,17 @@ def calc_target_index(state, cx, cy):
                       -np.sin(state.yaw + np.pi / 2)]
     error_front_axle = np.dot([dx[target_idx], dy[target_idx]], front_axle_vec)
 
+    # my way
+    e_vec = [dx[target_idx], dy[target_idx], 0]
+    v_vec = [np.cos(state.yaw), np.sin(state.yaw), 0]
 
-    return target_idx, error_front_axle
+    cross = np.cross(v_vec, e_vec)
+    de = np.linalg.norm(e_vec)
+    if cross[2] > 0:
+        de *= -1
+    print(de, error_front_axle)
+
+    return target_idx, de
 
 
 def main():
